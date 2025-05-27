@@ -8,7 +8,7 @@ import MovieModal from '../MovieModal/MovieModal';
 import { fetchMovies } from '../../services/movieService';
 import type { Movie } from '../../types/movie';
 import styles from './App.module.css';
-import { AxiosError } from 'axios'; // Додайте імпорт для типу AxiosError
+import { AxiosError } from 'axios';
 
 export default function App() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -16,10 +16,12 @@ export default function App() {
   const [error, setError] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = async (formData: FormData) => {
     setMovies([]);
     setError(false);
     setLoading(true);
+
+    const query = formData.get('query') as string;
 
     try {
       const results = await fetchMovies(query);
@@ -49,7 +51,7 @@ export default function App() {
 
   return (
     <div className={styles.container}>
-      <SearchBar onSubmit={handleSearch} />
+      <SearchBar action={handleSearch} />
       {loading && <Loader />}
       {error && <ErrorMessage />}
       {movies.length > 0 && (

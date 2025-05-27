@@ -1,5 +1,4 @@
 import axios from 'axios';
-import type { AxiosResponse } from 'axios';
 import type { Movie } from '../types/movie';
 
 interface MovieResponse {
@@ -8,7 +7,7 @@ interface MovieResponse {
 
 export const fetchMovies = async (query: string): Promise<Movie[]> => {
   try {
-    const response: AxiosResponse<MovieResponse> = await axios.get(
+    const response = await axios.get<MovieResponse>(
       'https://api.themoviedb.org/3/search/movie',
       {
         params: {

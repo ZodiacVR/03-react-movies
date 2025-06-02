@@ -1,52 +1,37 @@
-import React from 'react';
-import styles from './SearchBar.module.css';
-import toast from 'react-hot-toast';
+import { useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface SearchBarProps {
-  onSubmit: (query: string) => void; // Змінено на onSubmit
+  action: (formData: FormData) => void;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
+export default function SearchBar({ action }: SearchBarProps) {
+  const [query, setQuery] = useState('');
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const query = formData.get('query') as string;
+    const searchQuery = formData.get('query')?.toString().trim() || '';
 
-    if (!query || query.trim() === '') {
-      toast.error('Please enter your search query.');
+    if (!searchQuery) {
+      toast.error('Please enter a search query');
       return;
     }
 
-    onSubmit(query.trim()); // Викликаємо onSubmit з рядком запиту
+    action(formData);
+    setQuery(''); // Очищаємо поле після відправки
   };
 
   return (
-    <header className={styles.header}>
-      <div className={styles.container}>
-        <a
-          className={styles.link}
-          href="https://www.themoviedb.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by TMDB
-        </a>
-        <form className={styles.form} onSubmit={handleSubmit}> {/* Змінено на onSubmit */}
-          <input
-            className={styles.input}
-            type="text"
-            name="query"
-            autoComplete="off"
-            placeholder="Search movies..."
-            autoFocus
-          />
-          <button className={styles.button} type="submit">
-            Search
-          </button>
-        </form>
-      </div>
-    </header>
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        name="query"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search movies..."
+      />
+      <button type="submit">Search</button>
+    </form>
   );
-};
-
-export default SearchBar;
+}

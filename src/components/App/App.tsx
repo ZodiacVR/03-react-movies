@@ -1,42 +1,58 @@
-import { useState, useEffect } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import toast, { Toaster } from "react-hot-toast";
-import ReactPaginate from "react-paginate";
-import SearchBar from "../SearchBar/SearchBar";
-import MovieGrid from "../MovieGrid/MovieGrid";
-import Loader from "../Loader/Loader";
-import ErrorMessage from "../ErrorMessage/ErrorMessage";
-import MovieModal from "../MovieModal/MovieModal";
-import { fetchMovies } from "../../services/movieService";
-import type { Movie, MovieResponse } from "../../types/movie";
-import styles from "./App.module.css";
-import { AxiosError } from "axios";
-
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast'; 
+import SearchBar from '../SearchBar/SearchBar';
+import MovieGrid from '../MovieGrid/MovieGrid';
+import MovieModal from '../MovieModal/MovieModal';
+import Loader from '../Loader/Loader';
+import ErrorMessage from '../ErrorMessage/ErrorMessage';
+import { Toaster } from 'react-hot-toast';
+import { fetchMovies } from '../../services/movieService';
+import type { Movie, MovieResponse } from '../../types/movie';
 export default function App() {
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
 
-  const debouncedSearch = useDebounce(query, 500);
-
-  const { data, isLoading, isError, error } = useQuery<MovieResponse>({
-    queryKey: ["movies", debouncedSearch, page],
-    queryFn: () => fetchMovies(debouncedSearch, page),
-    enabled: !!debouncedSearch,
-    retry: 1,
-    placeholderData: keepPreviousData,
+  const { refetch } = useQuery<MovieResponse>({
+    queryKey: ['movies', query, page],
+    queryFn: () => fetchMovies(query, page),
+    enabled: false, // Виклик через refetch
   });
 
-  const handleSearch = (query: string) => {
-    if (query.trim() === "") {
-      toast.error("Please enter your search query.");
-      return;
+  useEffect(() => {
+    setIsLoading(true);
+    refetch()
+      .then(({ data }) => {
+        if (data) {
+          setMovies(data.results);
+          setIsLoading(false);
+          setError(null);
+        }
+      })
+      .catch((err: Error) => {
+        setIsLoading(false);
+        setError(err.message || 'Failed to fetch movies');
+        toast.error(err.message || 'An error occurred');
+      });
+  }, [query, page, refetch]);
+
+  const handleSearch = (formData: FormData) => {
+    const searchQuery = formData.get('query')?.toString().trim() || '';
+    if (searchQuery) {
+      setQuery(searchQuery);
+      setPage(1);
     }
-    setQuery(query.trim());
-    setPage(1);
   };
 
-  const handleSelectMovie = (movie: Movie) => {
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleMovieSelect = (movie: Movie) => {
     setSelectedMovie(movie);
   };
 
@@ -44,54 +60,27 @@ export default function App() {
     setSelectedMovie(null);
   };
 
-  useEffect(() => {
-    if (!isLoading && !isError && debouncedSearch && data?.results.length === 0) {
-      toast.error("No movies found for your request.");
-    }
-  }, [data, isLoading, isError, debouncedSearch]);
-
   return (
-    <div className={styles.container}>
-      <SearchBar onSubmit={handleSearch} />
-      {isLoading && <Loader />}
-      {isError && (
-        <ErrorMessage
-          message={
-            error instanceof AxiosError
-              ? `Failed to fetch movies: ${error.response?.data?.status_message || error.message}`
-              : "There was an error, please try again..."
-          }
-        />
-      )}
-      {data && data.results && data.results.length > 0 && (
+    <div>
+      <Toaster />
+      <SearchBar action={handleSearch} />
+      {isLoading ? (
+        <Loader />
+      ) : error ? (
+        <ErrorMessage message={error} />
+      ) : movies.length > 0 ? (
         <>
-          <MovieGrid movies={data.results} onSelect={handleSelectMovie} />
-          {data.total_pages > 1 && (
-            <ReactPaginate
-              pageCount={data.total_pages}
-              pageRangeDisplayed={5}
-              marginPagesDisplayed={1}
-              onPageChange={({ selected }: { selected: number }) => setPage(selected + 1)}
-              forcePage={page - 1}
-              containerClassName={styles.pagination}
-              activeClassName={styles.active}
-              nextLabel="→"
-              previousLabel="←"
-            />
-          )}
+          <MovieGrid movies={movies} onSelect={handleMovieSelect} />
+          <button onClick={() => handlePageChange(page - 1)} disabled={page === 1}>
+            Previous
+          </button>
+          <span>Page {page}</span>
+          <button onClick={() => handlePageChange(page + 1)}>Next</button>
         </>
+      ) : (
+        <p>No movies found</p>
       )}
       {selectedMovie && <MovieModal movie={selectedMovie} onClose={handleCloseModal} />}
-      <Toaster position="top-right" />
     </div>
   );
-}
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
 }

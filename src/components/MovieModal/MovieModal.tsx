@@ -1,44 +1,63 @@
+import css from './MovieModal.module.css';
 import { useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import type { Movie } from '../../types/movie';
+import { createPortal } from 'react-dom';
+import { imgURL } from '../../services/movieService';
 
 interface MovieModalProps {
-  movie: Movie;
-  onClose: () => void;
+    movie: Movie;
+    onClose: () => void;
 }
+export default function MovieModal({movie, onClose}: MovieModalProps) {
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
 
-export default function MovieModal({ movie, onClose }: MovieModalProps) {
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
     };
-    document.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden';
+
+    document.addEventListener("keydown", handleEsc);
+    document.body.style.overflow = "hidden";
+
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'auto';
+      document.removeEventListener("keydown", handleEsc);
+      document.body.style.overflow = "";
     };
   }, [onClose]);
 
-  return createPortal(
-    <div className="modal" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <button className="close-button" onClick={onClose}>
-          &times;
+    return createPortal(<div className={css.backdrop}
+    onClick={handleBackdropClick} 
+    role="dialog" 
+    aria-modal="true">
+      <div className={css.modal}>
+        <button 
+        className={css.closeButton}
+        onClick={onClose} 
+        aria-label="Close modal"
+        >
+         &times;
         </button>
-        {movie.backdrop_path ? (
-          <img
-            src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
+            <img
+            src={`${imgURL}${movie.backdrop_path}`}
             alt={movie.title}
-            className="modal-image"
-          />
-        ) : (
-          <p>No image available</p>
-        )}
-        <h2>{movie.title}</h2>
-        <p>{movie.overview}</p>
-        <p>Release Date: {movie.release_date}</p>
-        <p>Rating: {movie.vote_average}</p>
+            className={css.image}
+            />
+            <div className={css.content}>
+            <h2>{movie.title}</h2>
+            <p>{movie.overview}</p>
+            <p>
+            <strong>Release Date:</strong> {movie.release_date}
+            </p>
+            <p>
+            <strong>Rating:</strong> {movie.vote_average}/10
+            </p>
+            </div>    
       </div>
     </div>,
     document.body

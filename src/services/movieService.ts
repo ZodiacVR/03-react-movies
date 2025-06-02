@@ -1,18 +1,27 @@
-import axios from 'axios';
-import type { MovieResponse } from '../types/movie';
+import axios from "axios";
+import type { Movie } from "../types/movie";
 
-export const fetchMovies = async (query: string, page: number = 1): Promise<MovieResponse> => {
-  try {
-    const apiKey = import.meta.env.VITE_TMDB_API_KEY;
-    if (!apiKey) {
-      throw new Error('TMDB API key is missing. Please set VITE_TMDB_API_KEY in your .env file.');
-    }
-    const response = await axios.get<MovieResponse>('https://api.themoviedb.org/3/search/movie', {
-      params: { query, page, api_key: apiKey },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Fetch movies error:', error);
-    throw error instanceof Error ? error : new Error('Failed to fetch movies');
-  }
+interface MovieHttpResponse {
+    results: Movie[];
+}
+
+const URL = 'https://api.themoviedb.org/3/search/movie';
+
+export const fetchMovies = async (query: string): Promise<Movie[]> => {
+    const response = await axios.get<MovieHttpResponse>(
+        URL, {
+            params: {
+                query,
+                include_adult: false,
+                language: 'en-US',
+                page: 1,
+            },
+            headers: {
+                accept: 'application/json',
+                Authorization: import.meta.env.VITE_TMDB_TOKEN,
+            },
+        });
+    return response.data.results;
 };
+
+export const imgURL = 'https://image.tmdb.org/t/p/w500'; 

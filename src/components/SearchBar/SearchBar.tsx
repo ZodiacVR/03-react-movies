@@ -3,10 +3,10 @@ import styles from './SearchBar.module.css';
 import toast from 'react-hot-toast';
 
 interface SearchBarProps {
-  action: (formData: FormData) => void;
+  onSubmit: (query: string) => void; // Змінено на onSubmit
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ action }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -17,7 +17,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ action }) => {
       return;
     }
 
-    action(formData);
+    onSubmit(query.trim()); // Викликаємо onSubmit з рядком запиту
   };
 
   return (
@@ -31,7 +31,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ action }) => {
         >
           Powered by TMDB
         </a>
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form className={styles.form} onSubmit={handleSubmit}> {/* Змінено на onSubmit */}
           <input
             className={styles.input}
             type="text"
